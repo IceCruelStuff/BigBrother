@@ -46,11 +46,9 @@ use pocketmine\nbt\tag\LongTag;
 use pocketmine\nbt\tag\NamedTag;
 use pocketmine\nbt\tag\ShortTag;
 use pocketmine\nbt\tag\StringTag;
-use pocketmine\tile\Tile;
 use pocketmine\timings\TimingsHandler;
 use pocketmine\utils\BinaryStream;
 use pocketmine\utils\Binary;
-use shoghicp\BigBrother\BigBrother;
 use UnexpectedValueException;
 
 class ConvertUtils{
@@ -144,7 +142,7 @@ class ConvertUtils{
 		[[ 85,   4], [192,   0]], //Acacia Fence
 		[[ 85,   5], [191,   0]], //Dark Oak Fence
 		[[240,   0], [199,   0]], //Chorus Plant
-		[[199,  -1], [ 68,  -1]], //Item Frame is temporary a standing sign | TODO: Convert Item Frame block to its entity. #blamemojang
+		[[199,  -1], [ 68,  -1]], //Item Frame is temporary a standing sign | #blamemojang
 		[[252,  -1], [255,  -1]], //Structures Block
 		[[236,  -1], [251,  -1]], //Concretes
 		[[237,  -1], [252,  -1]], //Concretes Powder
@@ -474,8 +472,8 @@ class ConvertUtils{
 			case Item::JACK_O_LANTERN:
 				$itemDamage = 0;
 			break;
-			case Item::WRITTEN_BOOK:
 			case Item::WRITABLE_BOOK:
+			case Item::WRITTEN_BOOK:
 				if($isComputer){
 					$listTag = [];
 					$photoListTag = [];
@@ -757,34 +755,6 @@ class ConvertUtils{
 		];
 
 		$blockData = ($blockData & 0x08) | $directions[$blockData & 0x07];
-	}
-
-	/**
-	 * @param bool $isComputer
-	 * @param CompoundTag $blockEntity
-	 * @return CompoundTag
-	 */
-	public static function convertBlockEntity(bool $isComputer, CompoundTag $blockEntity): ?CompoundTag{
-		switch($blockEntity["id"]){
-			case Tile::FLOWER_POT:
-				$blockEntity->setTag(new ShortTag("Item", $blockEntity->getTagValue("item", ShortTag::class)));
-				$blockEntity->setTag(new IntTag("Data", $blockEntity->getTagValue("mData", IntTag::class)));
-
-				$blockEntity->removeTag("item", "mdata");
-			break;
-			case Tile::SIGN:
-				$textData = explode("\n", $blockEntity->getTagValue("Text", StringTag::class));
-
-				$blockEntity->setTag(new StringTag("Text1", BigBrother::toJSON($textData[0])));
-				$blockEntity->setTag(new StringTag("Text2", BigBrother::toJSON($textData[1])));
-				$blockEntity->setTag(new StringTag("Text3", BigBrother::toJSON($textData[2])));
-				$blockEntity->setTag(new StringTag("Text4", BigBrother::toJSON($textData[3])));
-
-				$blockEntity->removeTag("Text");
-			break;
-		}
-
-		return new CompoundTag();
 	}
 
 }

@@ -50,6 +50,7 @@ use pocketmine\nbt\NetworkLittleEndianNBTStream;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\IntTag;
 use pocketmine\nbt\tag\StringTag;
+use pocketmine\nbt\tag\ShortTag;
 use pocketmine\event\player\PlayerDropItemEvent;
 use pocketmine\network\mcpe\protocol\AddPaintingPacket;
 use pocketmine\network\mcpe\protocol\AddPlayerPacket;
@@ -67,7 +68,6 @@ use pocketmine\network\mcpe\protocol\ContainerSetDataPacket;
 use pocketmine\network\mcpe\protocol\CraftingDataPacket;
 use pocketmine\network\mcpe\protocol\DataPacket;
 use pocketmine\network\mcpe\protocol\DisconnectPacket;
-use pocketmine\network\mcpe\protocol\ExplodePacket;
 use pocketmine\network\mcpe\protocol\InteractPacket;
 use pocketmine\network\mcpe\protocol\InventoryContentPacket;
 use pocketmine\network\mcpe\protocol\InventorySlotPacket;
@@ -131,7 +131,6 @@ use shoghicp\BigBrother\network\protocol\Play\Server\EntityPropertiesPacket;
 use shoghicp\BigBrother\network\protocol\Play\Server\EntityStatusPacket;
 use shoghicp\BigBrother\network\protocol\Play\Server\EntityTeleportPacket;
 use shoghicp\BigBrother\network\protocol\Play\Server\EntityVelocityPacket;
-use shoghicp\BigBrother\network\protocol\Play\Server\ExplosionPacket;
 use shoghicp\BigBrother\network\protocol\Play\Server\HeldItemChangePacket;
 use shoghicp\BigBrother\network\protocol\Play\Server\MapPacket;
 use shoghicp\BigBrother\network\protocol\Play\Server\JoinGamePacket;
@@ -175,12 +174,9 @@ class Translator{
 	 */
 	public function interfaceToServer(DesktopPlayer $player, Packet $packet){
 		switch($packet->pid()){
-			case InboundPacket::CONFIRM_TRANSACTION_PACKET:
-			case InboundPacket::TELEPORT_CONFIRM_PACKET://Confirm
-				return null;
-
+			case InboundPacket::TELEPORT_CONFIRM_PACKET://Teleport Confirm
+			case InboundPacket::CONFIRM_TRANSACTION_PACKET://Transaction Confirm
 			case InboundPacket::TAB_COMPLETE_PACKET:
-				//TODO: Tab Button
 				return null;
 
 			case InboundPacket::CHAT_PACKET:
@@ -808,7 +804,7 @@ class Translator{
 					new IntTag("z", (int) $packet->z)
 				]);
 
-				$nbt = new NetworkLittleEndianNBTStream();;
+				$nbt = new NetworkLittleEndianNBTStream();
 
 				$pk = new BlockActorDataPacket();
 				$pk->x = $packet->x;
@@ -1614,20 +1610,6 @@ class Translator{
 
 				return $pk;
 
-			case Info::EXPLODE_PACKET:
-				/** @var ExplodePacket $packet */
-				$pk = new ExplosionPacket();
-				$pk->x = $packet->position->x;
-				$pk->y = $packet->position->y;
-				$pk->z = $packet->position->z;
-				$pk->radius = $packet->radius;
-				$pk->records = $packet->records;
-				$pk->motionX = 0;
-				$pk->motionY = 0;
-				$pk->motionZ = 0;
-
-				return $pk;
-
 			case Info::CHANGE_DIMENSION_PACKET:
 				/** @var ChangeDimensionPacket $packet */
 				$pk = new RespawnPacket();
@@ -2346,8 +2328,14 @@ class Translator{
 					break;
 					case Tile::FLOWER_POT:
 						$pk->actionID = 5;
+
 						/** @var CompoundTag $nbt */
-						$pk->namedtag = ConvertUtils::convertBlockEntity(true, $nbt);
+						$nbt->setTag(new ShortTag("Item", $nbt->getTagValue("item", ShortTag::class)));
+						$nbt->setTag(new IntTag("Data", $nbt->getTagValue("mData", IntTag::class)));
+
+						$nbt->removeTag("item", "mdata");
+
+						$pk->namedtag = $nbt;
 					break;
 					case Tile::ITEM_FRAME:
 						if(($entity = ItemFrameBlockEntity::getItemFrame($player->getLevel(), $packet->x, $packet->y, $packet->z)) !== null){
@@ -2358,7 +2346,16 @@ class Translator{
 					case Tile::SIGN:
 						$pk->actionID = 9;
 						/** @var CompoundTag $nbt */
-						$pk->namedtag = ConvertUtils::convertBlockEntity(true, $nbt);
+						$textData = explode("\n", $nbt->getTagValue("Text", StringTag::class));
+
+						//blame mojang
+						$nbt->setTag(new StringTag("Text1", BigBrother::toJSON($textData[0])));
+						$nbt->setTag(new StringTag("Text2", BigBrother::toJSON($textData[1])));
+						$nbt->setTag(new StringTag("Text3", BigBrother::toJSON($textData[2])));
+						$nbt->setTag(new StringTag("Text4", BigBrother::toJSON($textData[3])));
+						$nbt->removeTag("Text");
+
+						$pk->namedtag = $nbt;
 					break;
 					case Tile::SKULL:
 						$pk->actionID = 4;

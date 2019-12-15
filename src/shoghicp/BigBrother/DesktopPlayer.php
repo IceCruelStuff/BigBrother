@@ -66,10 +66,9 @@ use shoghicp\BigBrother\network\protocol\Play\Server\UnloadChunkPacket;
 use shoghicp\BigBrother\network\ProtocolInterface;
 use shoghicp\BigBrother\entity\ItemFrameBlockEntity;
 use shoghicp\BigBrother\utils\Binary;
-use shoghicp\BigBrother\utils\CapeUtils;
 use shoghicp\BigBrother\utils\InventoryUtils;
 use shoghicp\BigBrother\utils\RecipeUtils;
-use shoghicp\BigBrother\utils\SkinUtils;
+use shoghicp\BigBrother\utils\SkinImage;
 
 class DesktopPlayer extends Player{
 
@@ -441,11 +440,11 @@ class DesktopPlayer extends Player{
 		$pk = new RequestChunkRadiusPacket();
 		$pk->radius = 8;
 		$this->handleDataPacket($pk);
-		
+
 		$pk = new SetLocalPlayerAsInitializedPacket();
 		$pk->entityRuntimeId = $this->getId();
 		$this->handleDataPacket($pk);
-		
+
 		$pk = new KeepAlivePacket();
 		$pk->id = mt_rand();
 		$this->putRawPacket($pk);
@@ -554,27 +553,49 @@ class DesktopPlayer extends Player{
 			$pk->serverAddress = "127.0.0.1:25565";
 			$pk->locale = "en_US";
 			$pk->skipVerification = true;
-			$pk->clientData["SkinGeometry"] = "";//TODO
 			$pk->clientData["CurrentInputMode"] = 1;//Keyboard and mouse
+
+			$pk->clientData["AnimatedImageData"] = [];
 
 			if($model){
 				$pk->clientData["SkinId"] = $this->bigBrother_formattedUUID."_CustomSlim";
-				$pk->clientData["SkinGeometryName"] = "geometry.humanoid.customSlim";
+				$pk->clientData["SkinResourcePatch"] = base64_encode(json_encode(["geometry" => ["default" => "geometry.humanoid.customSlim"]]));
 			}else{
 				$pk->clientData["SkinId"] = $this->bigBrother_formattedUUID."_Custom";
-				$pk->clientData["SkinGeometryName"] = "geometry.humanoid.custom";
+				$pk->clientData["SkinResourcePatch"] = base64_encode(json_encode(["geometry" => ["default" => "geometry.humanoid.custom"]]));
 			}
 
-			$skin = new SkinUtils($skinImage);
-			$pk->clientData["SkinData"] = $skin->getSkinData();
+			$skin = new SkinImage($skinImage);
+			$pk->clientData["SkinData"] = $skin->getSkinImageData(true);
+			$skinSize = $this->getSkinImageSize(strlen($skin->getRawSkinImageData(true)));
+			$pk->clientData["SkinImageHeight"] = $skinSize[0];
+			$pk->clientData["SkinImageWidth"] = $skinSize[1];
 
-			$cape = new CapeUtils($capeImage);
-			$pk->clientData["CapeData"] = $cape->getCapeData();
+			$cape = new SkinImage($capeImage);
+			$pk->clientData["CapeData"] = $cape->getSkinImageData();
+			$capeSize = $this->getSkinImageSize(strlen($cape->getRawSkinImageData()));
+			$pk->clientData["CapeImageHeight"] = $capeSize[0];
+			$pk->clientData["CapeImageWidth"] = $capeSize[1];
 
 			$pk->chainData = ["chain" => []];
 			$pk->clientDataJwt = $this->generateClientDataJWT();
 			$this->handleDataPacket($pk);
 		}
+	}
+
+	private function getSkinImageSize(int $skinImageLength) : array{
+		switch($skinImageLength){
+			case 64 * 32 * 4:
+				return [64, 32];
+			case 64 * 64 * 4:
+				return [64, 64];
+			case 128 * 64 * 4:
+				return [128, 64];
+			case 128 * 128 * 4:
+				return [128, 128];
+		}
+
+		return [0, 0];
 	}
 
 	/**
@@ -601,6 +622,7 @@ class DesktopPlayer extends Player{
 				 * @param DesktopPlayer $player
 				 * @param string $username
 				 * @param string $hash
+				 * @noinspection PhpUndefinedMethodInspection TODO: Remove
 				 */
 				public function __construct(DesktopPlayer $player, string $username, string $hash){
 					self::storeLocal($player);
@@ -641,6 +663,7 @@ class DesktopPlayer extends Player{
 				/**
 				 * @override
 				 * @param $server
+				 * @noinspection PhpUndefinedMethodInspection TODO: Remove
 				 */
 				public function onCompletion(Server $server){
 					$result = $this->getResult();
@@ -682,6 +705,7 @@ class DesktopPlayer extends Player{
 						 * @param BigBrother $plugin
 						 * @param DesktopPlayer $player
 						 * @param string $username
+						 * @noinspection PhpUndefinedMethodInspection TODO: Remove
 						 */
 						public function __construct(BigBrother $plugin, DesktopPlayer $player, string $username){
 							self::storeLocal([$plugin, $player]);
@@ -749,6 +773,7 @@ class DesktopPlayer extends Player{
 						/**
 						 * @override
 						 * @param Server $server
+						 * @noinspection PhpUndefinedMethodInspection TODO: Remove
 						 */
 						public function onCompletion(Server $server){
 							$info = $this->getResult();
