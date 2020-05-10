@@ -142,7 +142,7 @@ class ConvertUtils{
 		[[ 85,   4], [192,   0]], //Acacia Fence
 		[[ 85,   5], [191,   0]], //Dark Oak Fence
 		[[240,   0], [199,   0]], //Chorus Plant
-		[[199,  -1], [ 68,  -1]], //Item Frame is temporary a standing sign | TODO: Convert Item Frame block to its entity. #blamemojang
+		[[199,  -1], [ 68,  -1]], //Item Frame is temporary a standing sign | #blamemojang
 		[[252,  -1], [255,  -1]], //Structures Block
 		[[236,  -1], [251,  -1]], //Concretes
 		[[237,  -1], [252,  -1]], //Concretes Powder
@@ -473,56 +473,6 @@ class ConvertUtils{
 				$itemDamage = 0;
 			break;
 			case Item::WRITABLE_BOOK:
-				if($isComputer){
-					$listTag = [];
-					$photoListTag = [];
-					foreach($itemNBT["pages"] as $pageNumber => $pageTags){
-						if($pageTags instanceof CompoundTag){
-							foreach($pageTags as $name => $tag){
-								if($tag instanceof StringTag){
-									switch($tag->getName()){
-										case "text":
-											$listTag[] = new StringTag("", $tag->getValue());
-										break;
-										case "photoname":
-											$photoListTag[] = new StringTag("", $tag->getValue());
-										break;
-									}
-								}
-							}
-						}
-					}
-
-					$itemNBT->removeTag("pages");
-					$itemNBT->setTag(new ListTag("pages", $listTag));
-					$itemNBT->setTag(new ListTag("photoname", $photoListTag));
-				}else{
-					$listTag = [];
-					foreach($itemNBT["pages"] as $pageNumber => $tag){
-						if($tag instanceof StringTag){
-							$tag->setName("text");
-
-							$value = "";
-							if(isset($itemNBT["photoname"][$pageNumber])){
-								$value = $itemNBT["photoname"][$pageNumber];
-							}
-							$photoNameTag = new StringTag("photoname", $value);
-
-							$listTag[] = new CompoundTag("", [
-								$tag,
-								$photoNameTag,
-							]);
-						}
-					}
-
-					$itemNBT->removeTag("pages");
-					if($itemNBT->hasTag("photoname")){
-						$itemNBT->removeTag("photoname");
-					}
-
-					$itemNBT->setTag(new ListTag("pages", $listTag));
-				}
-			break;
 			case Item::WRITTEN_BOOK:
 				if($isComputer){
 					$listTag = [];
