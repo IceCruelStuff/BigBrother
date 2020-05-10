@@ -68,7 +68,6 @@ use pocketmine\network\mcpe\protocol\ContainerSetDataPacket;
 use pocketmine\network\mcpe\protocol\CraftingDataPacket;
 use pocketmine\network\mcpe\protocol\DataPacket;
 use pocketmine\network\mcpe\protocol\DisconnectPacket;
-use pocketmine\network\mcpe\protocol\ExplodePacket;
 use pocketmine\network\mcpe\protocol\InteractPacket;
 use pocketmine\network\mcpe\protocol\InventoryContentPacket;
 use pocketmine\network\mcpe\protocol\InventorySlotPacket;
@@ -132,7 +131,6 @@ use shoghicp\BigBrother\network\protocol\Play\Server\EntityPropertiesPacket;
 use shoghicp\BigBrother\network\protocol\Play\Server\EntityStatusPacket;
 use shoghicp\BigBrother\network\protocol\Play\Server\EntityTeleportPacket;
 use shoghicp\BigBrother\network\protocol\Play\Server\EntityVelocityPacket;
-use shoghicp\BigBrother\network\protocol\Play\Server\ExplosionPacket;
 use shoghicp\BigBrother\network\protocol\Play\Server\HeldItemChangePacket;
 use shoghicp\BigBrother\network\protocol\Play\Server\MapPacket;
 use shoghicp\BigBrother\network\protocol\Play\Server\JoinGamePacket;
@@ -176,11 +174,9 @@ class Translator{
 	 */
 	public function interfaceToServer(DesktopPlayer $player, Packet $packet){
 		switch($packet->pid()){
-			case InboundPacket::TELEPORT_CONFIRM_PACKET://Confirm
-				return null;
-
+			case InboundPacket::TELEPORT_CONFIRM_PACKET://Teleport Confirm
+			case InboundPacket::CONFIRM_TRANSACTION_PACKET://Transaction Confirm
 			case InboundPacket::TAB_COMPLETE_PACKET:
-				//TODO: Tab Button
 				return null;
 
 			case InboundPacket::CHAT_PACKET:
@@ -250,9 +246,6 @@ class Translator{
 				$pk->radius = $packet->view;
 
 				return $pk;
-
-			case InboundPacket::CONFIRM_TRANSACTION_PACKET://Confirm
-				return null;
 
 			case InboundPacket::CLICK_WINDOW_PACKET:
 				/** @var ClickWindowPacket $packet */
@@ -811,7 +804,7 @@ class Translator{
 					new IntTag("z", (int) $packet->z)
 				]);
 
-				$nbt = new NetworkLittleEndianNBTStream();;
+				$nbt = new NetworkLittleEndianNBTStream();
 
 				$pk = new BlockActorDataPacket();
 				$pk->x = $packet->x;
@@ -1617,20 +1610,6 @@ class Translator{
 
 				return $pk;
 
-			case Info::EXPLODE_PACKET:
-				/** @var ExplodePacket $packet */
-				$pk = new ExplosionPacket();
-				$pk->x = $packet->position->x;
-				$pk->y = $packet->position->y;
-				$pk->z = $packet->position->z;
-				$pk->radius = $packet->radius;
-				$pk->records = $packet->records;
-				$pk->motionX = 0;
-				$pk->motionY = 0;
-				$pk->motionZ = 0;
-
-				return $pk;
-
 			case Info::CHANGE_DIMENSION_PACKET:
 				/** @var ChangeDimensionPacket $packet */
 				$pk = new RespawnPacket();
@@ -1638,7 +1617,7 @@ class Translator{
 				$pk->difficulty = $player->getServer()->getDifficulty();
 				$pk->gamemode = $player->getGamemode();
 				$pk->levelType = "default";
-	
+
 				$player->bigBrother_respawn();
 
 				return $pk;
@@ -2104,7 +2083,6 @@ class Translator{
 								$pk->health = $entry->getValue();//TODO: Default Value
 								$pk->food = (int) $player->getFood();//TODO: Default Value
 								$pk->saturation = $player->getSaturation();//TODO: Default Value
-
 							}elseif($packet->entityRuntimeId === $player->bigBrother_getBossBarData("entityRuntimeId")){
 								$uuid = $player->bigBrother_getBossBarData("uuid");
 								if($uuid === ""){
@@ -2125,7 +2103,6 @@ class Translator{
 									7 => [2, $entry->getValue()],
 									"convert" => true,
 								];
-								
 							}
 
 							$packets[] = $pk;
